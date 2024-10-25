@@ -6,7 +6,12 @@ fieldRouter.post("/create-field", fieldController.createField);
 
 fieldRouter.get("/", fieldController.getField);
 
-fieldRouter.get("/:id", fieldController.getFieldById);
+fieldRouter.get("/:fieldId", fieldController.getFieldById);
+
+fieldRouter.post("/create-child", fieldController.createChildField);
+
+fieldRouter.get("/get-child/:fieldId", fieldController.getChildFIeld);
+fieldRouter.get("/getchild/:childId", fieldController.getChildById);
 
 // Update field by id
 // router.put("/:id", async (req, res, next) => {

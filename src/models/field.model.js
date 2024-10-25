@@ -16,6 +16,18 @@ const fieldSchema = new mongoose.Schema({
   quantity: {
     type: Number,
   },
+  available: {
+    type: Number,
+  },
+  pricePerHour: {
+    type: Number,
+  },
+  childField: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "fieldChild",
+    },
+  ],
 });
 
 const Field = mongoose.model("Field", fieldSchema);

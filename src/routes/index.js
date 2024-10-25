@@ -12,4 +12,6 @@ router.use("/field", fieldRouter);
 router.use("/auth", authRouter);
 router.use("/booking", authorizationToken, bookingRouter);
 router.use("/admin", checkAdmin, adminRouter);
+// router.use("/booking", bookingRouter);
+
 export default router;

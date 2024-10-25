@@ -16,6 +16,11 @@ const bookingSchema = new mongoose.Schema(
       ref: "Field",
       required: true,
     },
+    fieldChild: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "fieldChild",
+      required: true,
+    },
     referee: {
       type: Boolean,
       required: true,
