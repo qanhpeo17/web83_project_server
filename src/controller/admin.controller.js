@@ -1,5 +1,21 @@
 import Booking from "../models/booking.model.js";
-
+import User from "../models/user.model.js";
+const getUsers = async (req, res) => {
+  try {
+    const userList = await User.find({ role: "user" });
+    if (!userList)
+      return res.status(404).json({
+        message: "Khong tim thay nguoi dung",
+      });
+    res.status(200).json({
+      userList,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Loi server " + error.message,
+    });
+  }
+};
 const getBooking = async (req, res) => {
   try {
     const bookings = await Booking.find();
@@ -37,5 +53,6 @@ const deleteBooking = async (req, res) => {
 const adminController = {
   getBooking,
   deleteBooking,
+  getUsers,
 };
 export default adminController;
