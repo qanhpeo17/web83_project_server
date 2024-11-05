@@ -107,67 +107,90 @@ const postBooking = async (req, res) => {
       !phone ||
       !fieldId ||
       !fieldChildId ||
-      !referee ||
-      !ball ||
+      referee === undefined ||
+      ball === undefined ||
       !rentalDate ||
       !rentalTime
     ) {
-      return res.status(400).json({
-        message: "Thiếu thông tin bắt buộc",
+      return res.status(404).json({
+        message: "Thiếu thông tin",
       });
     }
 
     if (ball < 1 || ball > 2) {
-      return res.status(400).json({
-        message: "Thông tin bóng không hợp lệ",
+      return res.status(404).json({
+        message: "Thông tin không hợp lệ",
       });
     }
 
     const user = req.user;
     const _user = await User.findById(user.id);
-    const field = await Field.findById(fieldId);
 
+    const field = await Field.findById(fieldId);
     if (!field) {
       return res.status(404).json({
         message: "Không tìm thấy sân",
       });
     }
 
-    // Check if there is availability
-    if (field.available >= field.quantity) {
-      return res.status(400).json({
-        message: "Hết sân",
+    const childField = await fieldChild.findById(fieldChildId);
+    if (!childField) {
+      return res.status(404).json({
+        message: "Không tìm thấy sân con",
       });
     }
 
-    // Create booking
-    const bookInfo = {
-      user: _user,
-      phone,
+    const bookingDateTime = new Date(`${rentalDate}T${rentalTime}`);
+
+    const startTime = new Date(bookingDateTime);
+    startTime.setMinutes(startTime.getMinutes() - 90);
+
+    const endTime = new Date(bookingDateTime);
+    endTime.setMinutes(endTime.getMinutes() + 90);
+
+    const overlappingBooking = await Booking.find({
       field: fieldId,
       fieldChild: fieldChildId,
-      referee,
-      ball,
-      rentalDate,
-      rentalTime,
-    };
+      rentalDate: rentalDate,
+      rentalTime: {
+        $gte: startTime,
+        $lt: endTime,
+      },
+    });
 
+    if (overlappingBooking.length > 0) {
+      return res.status(409).json({
+        message:
+          "Giờ đặt sân bị trùng với khoảng 1 giờ 30 phút của một lịch đặt sân khác",
+      });
+    }
+
+    const bookInfo = {
+      user: _user,
+      phone: phone,
+      field: field,
+      fieldChild: fieldChildId,
+      referee: referee,
+      ball: ball,
+      rentalDate: rentalDate,
+      rentalTime: rentalTime,
+    };
     const newBooking = await Booking.create(bookInfo);
 
-    // Update the availability count
-    field.available += 2; // Increment the booked count
-    await field.save(); // Save the updated field instance
+    field.available += 1;
+    await field.save();
+
+    childField.isAvailable = false;
+    await childField.save();
 
     res.status(201).json({
-      message: `Đặt sân thành công, còn ${
-        field.quantity - field.available
-      } sân`,
+      message: "Đặt sân thành công",
       newBooking,
     });
   } catch (err) {
     res.status(500).json({
       message: "Lỗi server",
-      err: err.message,
+      err,
     });
   }
 };
