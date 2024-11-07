@@ -34,7 +34,7 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
     rentalTime: {
-      type: String,
+      type: Date,
       required: true,
     },
     // booking: {

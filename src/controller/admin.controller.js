@@ -50,9 +50,27 @@ const deleteBooking = async (req, res) => {
     });
   }
 };
+const deleteUser = async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    if (!deletedUser)
+      return res.status(404).json({
+        message: "Khong the xoa nguoi dung",
+      });
+    res.status(200).json({
+      message: "Xoa nguoi dung thanh cong!",
+      deletedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Loi server " + error.message,
+    });
+  }
+};
 const adminController = {
   getBooking,
   deleteBooking,
   getUsers,
+  deleteUser,
 };
 export default adminController;

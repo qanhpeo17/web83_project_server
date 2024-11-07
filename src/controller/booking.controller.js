@@ -2,6 +2,7 @@ import Booking from "../models/booking.model.js";
 import Field from "../models/field.model.js";
 import fieldChild from "../models/fieldChild.model.js";
 import User from "../models/user.model.js";
+import moment from "moment";
 const getBooking = async (req, res) => {
   try {
     const bookings = await Booking.find().populate("user").populate("field");
@@ -112,13 +113,13 @@ const postBooking = async (req, res) => {
       !rentalDate ||
       !rentalTime
     ) {
-      return res.status(404).json({
+      return res.status(400).json({
         message: "Thiếu thông tin",
       });
     }
 
     if (ball < 1 || ball > 2) {
-      return res.status(404).json({
+      return res.status(400).json({
         message: "Thông tin không hợp lệ",
       });
     }
@@ -140,21 +141,13 @@ const postBooking = async (req, res) => {
       });
     }
 
-    const bookingDateTime = new Date(`${rentalDate}T${rentalTime}`);
-
-    const startTime = new Date(bookingDateTime);
-    startTime.setMinutes(startTime.getMinutes() - 90);
-
-    const endTime = new Date(bookingDateTime);
-    endTime.setMinutes(endTime.getMinutes() + 90);
-
     const overlappingBooking = await Booking.find({
       field: fieldId,
       fieldChild: fieldChildId,
-      rentalDate: rentalDate,
+      rentalDate: new Date(rentalDate), // Chỉ sử dụng rentalDate
       rentalTime: {
-        $gte: startTime,
-        $lt: endTime,
+        $gte: new Date(new Date(rentalTime).getTime() - 90 * 60 * 1000), // Trừ 90 phút
+        $lt: new Date(new Date(rentalTime).getTime() + 90 * 60 * 1000), // Cộng 90 phút
       },
     });
 
@@ -166,22 +159,23 @@ const postBooking = async (req, res) => {
     }
 
     const bookInfo = {
-      user: _user,
+      user: _user._id,
       phone: phone,
-      field: field,
+      field: fieldId,
       fieldChild: fieldChildId,
       referee: referee,
       ball: ball,
-      rentalDate: rentalDate,
-      rentalTime: rentalTime,
+      rentalDate: new Date(rentalDate),
+      rentalTime: new Date(rentalTime),
     };
+
     const newBooking = await Booking.create(bookInfo);
 
-    field.available += 1;
-    await field.save();
+    // field.available += 1;
+    // await field.save();
 
-    childField.isAvailable = false;
-    await childField.save();
+    // childField.isAvailable = false;
+    // await childField.save();
 
     res.status(201).json({
       message: "Đặt sân thành công",
@@ -189,12 +183,34 @@ const postBooking = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({
-      message: "Lỗi server",
-      err,
+      message: "Lỗi server" + err.message,
     });
   }
 };
+const getWeeklyBookings = async (req, res) => {
+  try {
+    const startOfWeek = moment().startOf("week").toDate();
+    const endOfWeek = moment().endOf("week").toDate();
 
+    const bookings = await Booking.find({
+      rentalDate: {
+        $gte: startOfWeek,
+        $lte: endOfWeek,
+      },
+    })
+      .populate("user", "name")
+      .populate("field", "name")
+      .populate("fieldChild", "name");
+
+    res.status(200).json({ bookings });
+  } catch (err) {
+    console.error("Lỗi server:", err);
+    res.status(500).json({
+      message: "Lỗi server",
+      err: err.message,
+    });
+  }
+};
 const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
@@ -273,6 +289,7 @@ const bookingController = {
   getBookingById,
   deleteBooking,
   getBookingByUserId,
+  getWeeklyBookings,
 };
 
 export default bookingController;
